@@ -4,7 +4,7 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 /**
- *  单行道问题
+ * 单行道问题
  * Created by bin on 2015/5/1.
  */
 public class OneWay {
@@ -15,27 +15,30 @@ public class OneWay {
 
     private Semaphore passSem;
 
+    private Semaphore passingSem;
+
     private int passToLeftNum;
 
-    private  int passToRightNum;
+    private int passToRightNum;
 
     private int threadNum;
 
-    public OneWay(int n){
+    public OneWay(int n) {
         this.threadNum = n;
         this.passToLeftNum = 0;
         this.passToRightNum = 0;
         toLeftSem = new Semaphore(1);
         toRightSem = new Semaphore(1);
         passSem = new Semaphore(1);
+        passingSem = new Semaphore(1);
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         final OneWay oneWay = new OneWay(10);
         Random random = new Random();
-        for(int i=0;i<oneWay.threadNum;i++){
+        for (int i = 0; i < oneWay.threadNum; i++) {
             final int who = i;
-            if(random.nextBoolean()){
+            if (random.nextBoolean()) {
                 Runnable run = new Runnable() {
                     @Override
                     public void run() {
@@ -47,7 +50,7 @@ public class OneWay {
                     }
                 };
                 new Thread(run).start();
-            }else{
+            } else {
                 Runnable run = new Runnable() {
                     @Override
                     public void run() {
@@ -63,18 +66,20 @@ public class OneWay {
         }
     }
 
-    private void toLeft(int i ) throws InterruptedException {
+    private void toLeft(int i) throws InterruptedException {
         toLeftSem.acquire();
         passToLeftNum++;
-        if(passToLeftNum==1){
+        if (passToLeftNum == 1) {
             passSem.acquire();
         }
         toLeftSem.release();
+        passingSem.acquire();
         System.out.println("I'm " + i + ", I'm passing to left...");
-        System.out.println("................I'm "+ i +", passing to left end...");
+        System.out.println("................I'm " + i + ", passing to left end...");
+        passingSem.release();
         toLeftSem.acquire();
         passToLeftNum--;
-        if(passToLeftNum==0){
+        if (passToLeftNum == 0) {
             passSem.release();
         }
         toLeftSem.release();
@@ -83,15 +88,17 @@ public class OneWay {
     private void toRight(int i) throws InterruptedException {
         toRightSem.acquire();
         passToRightNum++;
-        if(passToRightNum ==1){
+        if (passToRightNum == 1) {
             passSem.acquire();
         }
         toRightSem.release();
+        passingSem.acquire();
         System.out.println("I'm " + i + ", I'm passing to right...");
         System.out.println("................I'm " + i + ", passing to right end...");
+        passingSem.release();
         toRightSem.acquire();
         passToRightNum--;
-        if(passToRightNum ==0){
+        if (passToRightNum == 0) {
             passSem.release();
         }
         toRightSem.release();

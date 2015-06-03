@@ -1,9 +1,9 @@
 package homeWork.FundamentalOfCompiling.LexicalAnalysis;
 
 
-import homeWork.FundamentalOfCompiling.LexicalAnalysis.Tools.BinaryFomula;
-import homeWork.FundamentalOfCompiling.LexicalAnalysis.Tools.CharSignals;
-import homeWork.FundamentalOfCompiling.LexicalAnalysis.Tools.FileUtils;
+import homeWork.FundamentalOfCompiling.Tools.BinaryFomula;
+import homeWork.FundamentalOfCompiling.Tools.CharStore;
+import homeWork.FundamentalOfCompiling.Tools.FileUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,23 +18,30 @@ import java.util.List;
 public class LexicalAnalysis {
 
     public static void main(String[] args){
-        String path = LexicalAnalysis.class.getResource("").getPath()+"input.pas";
+        start();
+    }
+
+    public static LexicalAnalysis start(){
+        String path = "input.pas";
         StringBuilder input = FileUtils.read(path);
-        LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(input);
+        lexicalAnalysis = new LexicalAnalysis(input);
         while(lexicalAnalysis.currentIndex<lexicalAnalysis.inputStr.length()){
             lexicalAnalysis.lexAnalyze();
         }
-        FileUtils.outToFile(lexicalAnalysis.bfs, "out.dyd");
-        FileUtils.outErrorToFile(lexicalAnalysis.errorList, "error.err");
+        out();
+        return lexicalAnalysis;
     }
 
-    //符号表
-    private CharSignals charSignals = CharSignals.getInstance();
+    private static void out(){
+        lexicalAnalysis.bfs.add(String.format("%16s", "EOLN  24"));
+        lexicalAnalysis.bfs.add(String.format("%16s", "EOF  25"));
+        FileUtils.outDydToFile(lexicalAnalysis.bfs, "out.dyd");
+        FileUtils.outToFile(lexicalAnalysis.charStore.getErrorList(), "lex.err");
+    }
 
-    //常量表
-    private List<String> constanList = new ArrayList<String>();
+    public  CharStore charStore = new CharStore();
 
-    private List<String> errorList = new ArrayList<String>();
+    private static LexicalAnalysis lexicalAnalysis;
 
     //二元式数组
     private List<String> bfs = new ArrayList<String>();
@@ -54,18 +61,22 @@ public class LexicalAnalysis {
         if(currentIndex+1>inputStr.length()){
             return null;
         }
-        Character temp = inputStr.charAt(currentIndex++);
+        char temp = inputStr.charAt(currentIndex++);
         if(temp=='\n'){
             currentLine++;
+            bfs.add(String.format("%16s", "EOLN  24"));
         }
         return temp;
     }
 
-    public char getnbc(){
-        char temp;
+    public Character getnbc(){
+        Character temp;
         while(true){
             temp = getChar();
-            if(temp!=' '&&temp!='\0'){
+            if(temp==null){
+                return null;
+            }
+            if(temp!=' '&&temp!='\0'&&temp!='\r'&&temp!='\n'){
                 return temp;
             }
         }
@@ -73,68 +84,72 @@ public class LexicalAnalysis {
 
     public void lexAnalyze(){
         StringBuilder token = new StringBuilder();
-        char currentChar;
+        Character currentChar;
         currentChar = getnbc();
-
-        if(Character.isLetter(currentChar)) {
-            dealLetterAndDigit(currentChar, token);
+        if(currentChar == null){
             return;
-        }else if(Character.isDigit(currentChar)) {
-            dealNum(currentChar, token);
+        }else{
+            if(Character.isLetter(currentChar)) {
+                dealLetterAndDigit(currentChar, token);
             return;
-        }
-        switch (currentChar) {
-            case '<':
-                currentChar = getChar();
-                if(currentChar=='=') {
-                    bfs.add(charSignals.getBinaryFomula("<="));
-                }else {
-                    bfs.add(charSignals.getBinaryFomula("<"));
-                }
-                break;
-            case ':':
-                currentChar = getChar();
-                if(currentChar=='=') {
-                    bfs.add(charSignals.getBinaryFomula(":="));
-                }else {
-                    errorList.add(currentLine+"  符号匹配错误");
-                }
-                break;
-            case '>':
-                currentChar = getChar();
-                if(currentChar=='=') {
-                    bfs.add(charSignals.getBinaryFomula(">="));
-                }else {
-                    bfs.add(charSignals.getBinaryFomula(">"));
-                }
-                break;
-            case '=':
-                currentChar = getChar();
-                if(currentChar=='=') {
-                    bfs.add(charSignals.getBinaryFomula("=="));
-                }else {
-                    bfs.add(charSignals.getBinaryFomula("="));
-                }
-                break;
-            case '!':
-                currentChar = getChar();
-                if (currentChar == '=') {
-                    bfs.add(charSignals.getBinaryFomula("!="));
-                }else {
-                    errorList.add(currentLine+"  符号匹配错误");
-                }
-                break;
-            default:
-                if(currentChar=='\r'||currentChar=='\n'||currentChar=='\0'){
+            }else if(Character.isDigit(currentChar)) {
+                dealNum(currentChar, token);
+            return;
+            }
+            switch (currentChar) {
+                case '<':
+                    currentChar = getChar();
+                    if(currentChar=='=') {
+                        bfs.add(charStore.getBinaryFomula("<="));
+                    }else {
+                        bfs.add(charStore.getBinaryFomula("<"));
+                    }
                     break;
-                }
-                String bfStr = charSignals.getBinaryFomula(String.valueOf(currentChar));
-                if(bfStr==null) {
-                    errorList.add(currentLine+"  错误zzz");
-                }else{
-                    bfs.add(bfStr);
-                }
+                case ':':
+                    currentChar = getChar();
+                    if(currentChar=='=') {
+                        bfs.add(charStore.getBinaryFomula(":="));
+                    }else {
+                        charStore.addToErrorList(currentLine + "  LINE  非法字符 "+ inputStr.charAt(currentIndex-2));
+                    }
+                    break;
+                case '>':
+                    currentChar = getChar();
+                    if(currentChar=='=') {
+                        bfs.add(charStore.getBinaryFomula(">="));
+                    }else {
+                        bfs.add(charStore.getBinaryFomula(">"));
+                    }
+                    break;
+                case '=':
+                    currentChar = getChar();
+                    if(currentChar=='=') {
+                        bfs.add(charStore.getBinaryFomula("=="));
+                    }else {
+                        bfs.add(charStore.getBinaryFomula("="));
+                    }
+                    break;
+                case '!':
+                    currentChar = getChar();
+                    if (currentChar == '=') {
+                        bfs.add(charStore.getBinaryFomula("!="));
+                    }else {
+                        charStore.addToErrorList(currentLine+" LINE  非法字符  "+ inputStr.charAt(currentIndex-2));
+                    }
+                    break;
+                default:
+                    if(currentChar=='\r'||currentChar=='\n'||currentChar=='\0'){
+                        break;
+                    }
+                    String bfStr = charStore.getBinaryFomula(String.valueOf(currentChar));
+                    if(bfStr==null) {
+                        charStore.addToErrorList(currentLine + " LINE  符号无定义 "+inputStr.charAt(currentIndex-2));
+                    }else{
+                        bfs.add(bfStr);
+                    }
+            }
         }
+
     }
 
     private void dealNum(char currentChar, StringBuilder token) {
@@ -146,9 +161,9 @@ public class LexicalAnalysis {
                 break;
             }
         }
+        charStore.addToConstantList(token.toString());
 
-        constanList.add(token.toString());
-        bfs.add(new BinaryFomula(token.toString(), constanList.size()-1).toString());
+        bfs.add(new BinaryFomula(token.toString(), charStore.getConstantList().size()).toString());
     }
 
     private void dealLetterAndDigit(Character currentChar, StringBuilder token){
@@ -156,20 +171,18 @@ public class LexicalAnalysis {
             token.append(currentChar);
             currentChar = getChar();
             if(currentChar==null){
-                break;
+               return;
             }
             if(!Character.isLetter(currentChar)&&!Character.isDigit(currentChar)) {
                 currentIndex--;
                 break;
             }
         }
-
-        int num = charSignals.isReserve(token.toString());
+        int num = charStore.isReserve(token.toString());
         if(num!=0){
-            bfs.add(charSignals.getBinaryFomula(token.toString()));
+            bfs.add(charStore.getBinaryFomula(token.toString()));
         }else{
-            constanList.add(token.toString());
-            bfs.add(new BinaryFomula(token.toString(), constanList.size()-1).toString());
+            bfs.add(charStore.addToSymbolList(token.toString()));
         }
     }
 

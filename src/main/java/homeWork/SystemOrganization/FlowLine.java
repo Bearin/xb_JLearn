@@ -6,13 +6,17 @@ import java.util.Random;
 
 /**
  *  模拟流水线
+ *
  * Created by bin on 2015/5/1.
  */
 public class FlowLine {
     public static void main(String[] args){
-        FlowLine fl = new FlowLine(5);
-        fl.startFlowLine();
-        fl.outResults();
+        for(int i=4;i<=20;i++){
+            FlowLine fl = new FlowLine(i);
+            fl.startFlowLine();
+            fl.outResults();
+        }
+
     }
 
     //输入数据队列，使用随机数生成队列中的元素
@@ -52,10 +56,7 @@ public class FlowLine {
     private void startFlowLine(){
         while(true){
             totalTime++;
-            if(queue.size()>=2){
-                results.add(queue.poll()+queue.poll());
-                exceptTimes.add(totalTime + 3);
-            }
+            add();
             if(totalTime==exceptTimes.peek()){
                 queue.add(results.poll());
                 exceptTimes.poll();
@@ -63,6 +64,16 @@ public class FlowLine {
             if(queue.size()==1&&results.size()==0){
                 break;
             }
+        }
+    }
+
+    /**
+     * 加法器
+     */
+    private void add(){
+        if(queue.size()>=2){
+            results.add(queue.poll()+queue.poll());
+            exceptTimes.add(totalTime + 3);
         }
     }
 }

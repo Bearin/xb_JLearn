@@ -1,8 +1,7 @@
-package homeWork.FundamentalOfCompiling.LexicalAnalysis.Tools;
-
-import java.util.BitSet;
+package homeWork.FundamentalOfCompiling.Tools;
 
 /**
+ * 二元式
  * Created by bin on 2015/5/2.
  */
 public class BinaryFomula {
@@ -26,7 +25,7 @@ public class BinaryFomula {
 
     @Override
     public String toString() {
-        return  String.format("%-16s", signal)+" "+num;
+        return  String.format("%-16s", signal)+" "+String.format("%2s",num);
     }
 
 }
